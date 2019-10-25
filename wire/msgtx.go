@@ -259,7 +259,9 @@ func (t TxWitness) SerializeSize() int {
 
 // TxOut defines a bitcoin transaction output.
 type TxOut struct {
+	Type 	 uint8
 	Value    int64
+	Asset	 uint32
 	PkScript []byte
 }
 
@@ -268,14 +270,16 @@ type TxOut struct {
 func (t *TxOut) SerializeSize() int {
 	// Value 8 bytes + serialized varint size for the length of PkScript +
 	// PkScript bytes.
-	return 8 + VarIntSerializeSize(uint64(len(t.PkScript))) + len(t.PkScript)
+	return 1 + 8 + 4 + VarIntSerializeSize(uint64(len(t.PkScript))) + len(t.PkScript)
 }
 
 // NewTxOut returns a new bitcoin transaction output with the provided
 // transaction value and public key script.
-func NewTxOut(value int64, pkScript []byte) *TxOut {
+func NewTxOut(typ uint8, value int64, asset uint32, pkScript []byte) *TxOut {
 	return &TxOut{
+		Type: 	  typ,
 		Value:    value,
+		Asset: 	  asset,
 		PkScript: pkScript,
 	}
 }
@@ -329,6 +333,8 @@ func (msg *MsgTx) WitnessHash() chainhash.Hash {
 	return msg.TxHash()
 }
 
+
+// TO-DO: Make necessary changes so this works with new TxOut struct
 // Copy creates a deep copy of a transaction so that the original does not get
 // modified when the copy is manipulated.
 func (msg *MsgTx) Copy() *MsgTx {
@@ -395,7 +401,9 @@ func (msg *MsgTx) Copy() *MsgTx {
 		// Create new txOut with the deep copied data and append it to
 		// new Tx.
 		newTxOut := TxOut{
+			Type:	  oldTxOut.Type,
 			Value:    oldTxOut.Value,
+			Asset:	  oldTxOut.Asset,
 			PkScript: newScript,
 		}
 		newTx.TxOut = append(newTx.TxOut, &newTxOut)
@@ -986,7 +994,17 @@ func writeTxIn(w io.Writer, pver uint32, version int32, ti *TxIn) error {
 // readTxOut reads the next sequence of bytes from r as a transaction output
 // (TxOut).
 func readTxOut(r io.Reader, pver uint32, version int32, to *TxOut) error {
+	err := readElement(r, &to.Type)
+	if err != nil {
+		return err
+	}
+
 	err := readElement(r, &to.Value)
+	if err != nil {
+		return err
+	}
+
+	err := readElement(r, &to.Hash)
 	if err != nil {
 		return err
 	}
@@ -1002,7 +1020,17 @@ func readTxOut(r io.Reader, pver uint32, version int32, to *TxOut) error {
 // NOTE: This function is exported in order to allow txscript to compute the
 // new sighashes for witness transactions (BIP0143).
 func WriteTxOut(w io.Writer, pver uint32, version int32, to *TxOut) error {
+	err := binarySerializer.PutUint8(w, littleEndian, uint8(to.Type))
+	if err != nil {
+		return err
+	}
+
 	err := binarySerializer.PutUint64(w, littleEndian, uint64(to.Value))
+	if err != nil {
+		return err
+	}
+
+	err := binarySerializer.PutUint32(w, littleEndian, uint32(to.Asset))
 	if err != nil {
 		return err
 	}
