@@ -999,12 +999,12 @@ func readTxOut(r io.Reader, pver uint32, version int32, to *TxOut) error {
 		return err
 	}
 
-	err := readElement(r, &to.Value)
+	err = readElement(r, &to.Value)
 	if err != nil {
 		return err
 	}
 
-	err := readElement(r, &to.Hash)
+	err = readElement(r, &to.Asset)
 	if err != nil {
 		return err
 	}
@@ -1020,17 +1020,17 @@ func readTxOut(r io.Reader, pver uint32, version int32, to *TxOut) error {
 // NOTE: This function is exported in order to allow txscript to compute the
 // new sighashes for witness transactions (BIP0143).
 func WriteTxOut(w io.Writer, pver uint32, version int32, to *TxOut) error {
-	err := binarySerializer.PutUint8(w, littleEndian, uint8(to.Type))
+	err := binarySerializer.PutUint8(w, uint8(to.Type))
 	if err != nil {
 		return err
 	}
 
-	err := binarySerializer.PutUint64(w, littleEndian, uint64(to.Value))
+	err = binarySerializer.PutUint64(w, littleEndian, uint64(to.Value))
 	if err != nil {
 		return err
 	}
 
-	err := binarySerializer.PutUint32(w, littleEndian, uint32(to.Asset))
+	err = binarySerializer.PutUint32(w, littleEndian, uint32(to.Asset))
 	if err != nil {
 		return err
 	}
