@@ -655,6 +655,7 @@ func serializeUtxoEntry(entry *UtxoEntry) ([]byte, error) {
 	// transaction output.
 	serialized := make([]byte, size)
 	offset := putVLQ(serialized, headerCode)
+
 	offset += putCompressedTxOut(serialized[offset:], uint8(entry.Type()), uint64(entry.Amount()), entry.Asset(),
 		entry.PkScript())
 

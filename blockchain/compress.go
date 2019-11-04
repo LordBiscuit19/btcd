@@ -671,5 +671,5 @@ func putAsset(target []byte, asset chainhash.Hash) int {
 	//	target[i], target[j] = target[j], target[i]
 	//}
 
-	return offset + 1
+	return offset
 }

@@ -542,7 +542,9 @@ func handleCreateRawTransaction(s *rpcServer, cmd interface{}, closeChan <-chan 
 	// some validity checks.
 	params := s.cfg.ChainParams
 	for encodedAddr, output := range c.Outputs {
+		txType := output.Type
 		amount := output.Amount
+		asset := output.AssetHash
 		// Ensure amount is in the valid range for monetary amounts.
 		if amount <= 0 || amount > btcutil.MaxSatoshi {
 			return nil, &btcjson.RPCError{
@@ -594,7 +596,15 @@ func handleCreateRawTransaction(s *rpcServer, cmd interface{}, closeChan <-chan 
 			return nil, internalRPCError(err.Error(), context)
 		}
 
-		txOut := wire.NewTxOut(int64(satoshi), pkScript)
+		//NewHashFromStr(hash string) (*Hash, error)
+		assetPtr, err := chainhash.NewHashFromStr(asset)
+		if err != nil {
+			context := "Failed to encode asset string as hash"
+			return nil, internalRPCError(err.Error(), context)
+		}
+		var assetHash chainhash.Hash
+		assetHash.SetBytes(assetPtr[:])
+		txOut := wire.NewTxOut(txType, int64(satoshi), assetHash, pkScript)
 		mtx.AddTxOut(txOut)
 	}
 
