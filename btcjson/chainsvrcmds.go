@@ -53,10 +53,18 @@ type TransactionInput struct {
 	Vout uint32 `json:"vout"`
 }
 
+// TransactionOutput represents the outputs of a transaction. Specifically
+// the type of a transaction, the amount, and the asset's hash
+type TransactionOutput struct {
+	Type      uint8   `json:"type"`      // 1 if a tx involving assests, 0 if not
+	Amount    float64 `json:"amount"`    // In BTC
+	AssetHash string  `json:"assethash"` // Asset hash
+}
+
 // CreateRawTransactionCmd defines the createrawtransaction JSON-RPC command.
 type CreateRawTransactionCmd struct {
 	Inputs   []TransactionInput
-	Amounts  map[string]float64 `jsonrpcusage:"{\"address\":amount,...}"` // In BTC
+	Outputs  map[string]TransactionOutput
 	LockTime *int64
 }
 
@@ -64,12 +72,12 @@ type CreateRawTransactionCmd struct {
 // a createrawtransaction JSON-RPC command.
 //
 // Amounts are in BTC.
-func NewCreateRawTransactionCmd(inputs []TransactionInput, amounts map[string]float64,
+func NewCreateRawTransactionCmd(inputs []TransactionInput, outputs map[string]TransactionOutput,
 	lockTime *int64) *CreateRawTransactionCmd {
 
 	return &CreateRawTransactionCmd{
 		Inputs:   inputs,
-		Amounts:  amounts,
+		Outputs:  outputs,
 		LockTime: lockTime,
 	}
 }

@@ -239,20 +239,25 @@ func (r FutureCreateRawTransactionResult) Receive() (*wire.MsgTx, error) {
 //
 // See CreateRawTransaction for the blocking version and more details.
 func (c *Client) CreateRawTransactionAsync(inputs []btcjson.TransactionInput,
-	amounts map[btcutil.Address]btcutil.Amount, lockTime *int64) FutureCreateRawTransactionResult {
+	outputs map[btcutil.Address]btcjson.TransactionOutput, lockTime *int64) FutureCreateRawTransactionResult {
 
-	convertedAmts := make(map[string]float64, len(amounts))
-	for addr, amount := range amounts {
-		convertedAmts[addr.String()] = amount.ToBTC()
+	convertedOuts := make(map[string]btcjson.TransactionOutput, len(outputs))
+	for addr, output := range outputs {
+		amount := btcutil.Amount(output.Amount)
+		convertedOuts[addr.String()] = btcjson.TransactionOutput{
+			Type:      output.Type,
+			Amount:    amount.ToBTC(),
+			AssetHash: output.AssetHash,
+		}
 	}
-	cmd := btcjson.NewCreateRawTransactionCmd(inputs, convertedAmts, lockTime)
+	cmd := btcjson.NewCreateRawTransactionCmd(inputs, convertedOuts, lockTime)
 	return c.sendCmd(cmd)
 }
 
 // CreateRawTransaction returns a new transaction spending the provided inputs
 // and sending to the provided addresses.
 func (c *Client) CreateRawTransaction(inputs []btcjson.TransactionInput,
-	amounts map[btcutil.Address]btcutil.Amount, lockTime *int64) (*wire.MsgTx, error) {
+	amounts map[btcutil.Address]btcjson.TransactionOutput, lockTime *int64) (*wire.MsgTx, error) {
 
 	return c.CreateRawTransactionAsync(inputs, amounts, lockTime).Receive()
 }

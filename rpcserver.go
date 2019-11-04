@@ -541,7 +541,8 @@ func handleCreateRawTransaction(s *rpcServer, cmd interface{}, closeChan <-chan 
 	// Add all transaction outputs to the transaction after performing
 	// some validity checks.
 	params := s.cfg.ChainParams
-	for encodedAddr, amount := range c.Amounts {
+	for encodedAddr, output := range c.Outputs {
+		amount := output.Amount
 		// Ensure amount is in the valid range for monetary amounts.
 		if amount <= 0 || amount > btcutil.MaxSatoshi {
 			return nil, &btcjson.RPCError{
