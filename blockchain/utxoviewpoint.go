@@ -40,8 +40,9 @@ type UtxoEntry struct {
 	// how it affects alignment on 64-bit platforms.  The current order is
 	// specifically crafted to result in minimal padding.  There will be a
 	// lot of these in memory, so a few extra bytes of padding adds up.
-
+	txOutType	uint8
 	amount      int64
+	asset 		chainhash.Hash
 	pkScript    []byte // The public key script for the output.
 	blockHeight int32  // Height of block containing tx.
 
@@ -92,6 +93,16 @@ func (entry *UtxoEntry) Amount() int64 {
 	return entry.amount
 }
 
+// Asset returns the asset hash of the output.
+func (entry *UtxoEntry) Asset() chainhash.Hash {
+	return entry.asset
+}
+
+// Type returns the tx out type of the output.
+func (entry *UtxoEntry) Type() uint8 {
+	return entry.txOutType
+}
+
 // PkScript returns the public key script for the output.
 func (entry *UtxoEntry) PkScript() []byte {
 	return entry.pkScript
@@ -104,7 +115,9 @@ func (entry *UtxoEntry) Clone() *UtxoEntry {
 	}
 
 	return &UtxoEntry{
+		txOutType: 	 entry.txOutType,
 		amount:      entry.amount,
+		asset:		 entry.asset,
 		pkScript:    entry.pkScript,
 		blockHeight: entry.blockHeight,
 		packedFlags: entry.packedFlags,
@@ -163,7 +176,9 @@ func (view *UtxoViewpoint) addTxOut(outpoint wire.OutPoint, txOut *wire.TxOut, i
 		view.entries[outpoint] = entry
 	}
 
+	entry.txOutType = txOut.Type
 	entry.amount = txOut.Value
+	entry.asset = txOut.Asset
 	entry.pkScript = txOut.PkScript
 	entry.blockHeight = blockHeight
 	entry.packedFlags = tfModified
@@ -240,7 +255,9 @@ func (view *UtxoViewpoint) connectTransaction(tx *btcutil.Tx, blockHeight int32,
 		if stxos != nil {
 			// Populate the stxo details using the utxo entry.
 			var stxo = SpentTxOut{
+				Type:		entry.Type(),
 				Amount:     entry.Amount(),
+				Asset:		entry.Asset(),
 				PkScript:   entry.PkScript(),
 				Height:     entry.BlockHeight(),
 				IsCoinBase: entry.IsCoinBase(),
@@ -352,7 +369,9 @@ func (view *UtxoViewpoint) disconnectTransactions(db database.DB, block *btcutil
 			entry := view.entries[prevOut]
 			if entry == nil {
 				entry = &UtxoEntry{
+					txOutType:	 txOut.Type,
 					amount:      txOut.Value,
+					asset:		 txOut.Asset,
 					pkScript:    txOut.PkScript,
 					blockHeight: block.Height(),
 					packedFlags: packedFlags,
@@ -422,7 +441,9 @@ func (view *UtxoViewpoint) disconnectTransactions(db database.DB, block *btcutil
 
 			// Restore the utxo using the stxo data from the spend
 			// journal and mark it as modified.
+			entry.txOutType = stxo.Type
 			entry.amount = stxo.Amount
+			entry.asset = stxo.Asset
 			entry.pkScript = stxo.PkScript
 			entry.blockHeight = stxo.Height
 			entry.packedFlags = tfModified

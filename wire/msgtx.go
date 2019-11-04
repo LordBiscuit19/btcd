@@ -261,7 +261,7 @@ func (t TxWitness) SerializeSize() int {
 type TxOut struct {
 	Type 	 uint8
 	Value    int64
-	Asset	 uint32
+	Asset	 chainhash.Hash
 	PkScript []byte
 }
 
@@ -270,12 +270,12 @@ type TxOut struct {
 func (t *TxOut) SerializeSize() int {
 	// Value 8 bytes + serialized varint size for the length of PkScript +
 	// PkScript bytes.
-	return 1 + 8 + 4 + VarIntSerializeSize(uint64(len(t.PkScript))) + len(t.PkScript)
+	return 1 + 8 + 32 + VarIntSerializeSize(uint64(len(t.PkScript))) + len(t.PkScript)
 }
 
 // NewTxOut returns a new bitcoin transaction output with the provided
 // transaction value and public key script.
-func NewTxOut(typ uint8, value int64, asset uint32, pkScript []byte) *TxOut {
+func NewTxOut(typ uint8, value int64, asset chainhash.Hash, pkScript []byte) *TxOut {
 	return &TxOut{
 		Type: 	  typ,
 		Value:    value,
@@ -1030,7 +1030,8 @@ func WriteTxOut(w io.Writer, pver uint32, version int32, to *TxOut) error {
 		return err
 	}
 
-	err = binarySerializer.PutUint32(w, littleEndian, uint32(to.Asset))
+	_, err = w.Write(to.Asset[:])
+	//err = binarySerializer.writeElement(w, littleEndian, to.Asset)
 	if err != nil {
 		return err
 	}

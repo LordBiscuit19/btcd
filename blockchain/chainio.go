@@ -240,8 +240,12 @@ func dbFetchOrCreateVersion(dbTx database.Tx, key []byte, defaultVersion uint32)
 // when this spent txout is spending the last unspent output of the containing
 // transaction.
 type SpentTxOut struct {
+	Type uint8
+
 	// Amount is the amount of the output.
 	Amount int64
+
+	Asset chainhash.Hash
 
 	// PkScipt is the the public key script for the output.
 	PkScript []byte
@@ -301,7 +305,7 @@ func spentTxOutSerializeSize(stxo *SpentTxOut) int {
 		// so this is required for backwards compat.
 		size += serializeSizeVLQ(0)
 	}
-	return size + compressedTxOutSize(uint64(stxo.Amount), stxo.PkScript)
+	return size + compressedTxOutSize(uint64(stxo.Amount), stxo.PkScript) + 1 + 32.
 }
 
 // putSpentTxOut serializes the passed stxo according to the format described
@@ -317,7 +321,7 @@ func putSpentTxOut(target []byte, stxo *SpentTxOut) int {
 		// so this is required for backwards compat.
 		offset += putVLQ(target[offset:], 0)
 	}
-	return offset + putCompressedTxOut(target[offset:], uint64(stxo.Amount),
+	return offset + putCompressedTxOut(target[offset:], uint8(stxo.Type), uint64(stxo.Amount), stxo.Asset,
 		stxo.PkScript)
 }
 
@@ -356,14 +360,16 @@ func decodeSpentTxOut(serialized []byte, stxo *SpentTxOut) (int, error) {
 	}
 
 	// Decode the compressed txout.
-	amount, pkScript, bytesRead, err := decodeCompressedTxOut(
+	txType, amount, asset, pkScript, bytesRead, err := decodeCompressedTxOut(
 		serialized[offset:])
 	offset += bytesRead
 	if err != nil {
 		return offset, errDeserialize(fmt.Sprintf("unable to decode "+
 			"txout: %v", err))
 	}
+	stxo.Type = txType
 	stxo.Amount = int64(amount)
+	stxo.Asset = asset
 	stxo.PkScript = pkScript
 	return offset, nil
 }
@@ -649,7 +655,7 @@ func serializeUtxoEntry(entry *UtxoEntry) ([]byte, error) {
 	// transaction output.
 	serialized := make([]byte, size)
 	offset := putVLQ(serialized, headerCode)
-	offset += putCompressedTxOut(serialized[offset:], uint64(entry.Amount()),
+	offset += putCompressedTxOut(serialized[offset:], uint8(entry.Type()), uint64(entry.Amount()), entry.Asset(),
 		entry.PkScript())
 
 	return serialized, nil
@@ -673,14 +679,16 @@ func deserializeUtxoEntry(serialized []byte) (*UtxoEntry, error) {
 	blockHeight := int32(code >> 1)
 
 	// Decode the compressed unspent transaction output.
-	amount, pkScript, _, err := decodeCompressedTxOut(serialized[offset:])
+	txType, amount, asset, pkScript, _, err := decodeCompressedTxOut(serialized[offset:])
 	if err != nil {
 		return nil, errDeserialize(fmt.Sprintf("unable to decode "+
 			"utxo: %v", err))
 	}
 
 	entry := &UtxoEntry{
+		txOutType:	 txType,
 		amount:      int64(amount),
+		asset:		 asset,
 		pkScript:    pkScript,
 		blockHeight: blockHeight,
 		packedFlags: 0,

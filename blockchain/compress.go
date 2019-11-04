@@ -7,6 +7,7 @@ package blockchain
 import (
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/btcsuite/btcd/txscript"
+	"github.com/btcsuite/btcd/chaincfg/chainhash"
 )
 
 // -----------------------------------------------------------------------------
@@ -103,6 +104,37 @@ func deserializeVLQ(serialized []byte) (uint64, int) {
 	}
 
 	return n, size
+}
+
+
+// deserializeTXType deserializes the provided TXType stored in a byte slice.
+// It also returns the number of bytes deserialized.
+func deserializeTXType(serialized []byte) (uint8, int) {
+	var n uint8
+	var size int = 1
+	for _, val := range serialized {
+		n = val
+		break		
+	}
+
+	return n, size
+}
+
+// deserializeAsset deserializes the provided asset stored in a byte slice.
+// It also returns the number of bytes deserialized.
+func deserializeAsset(serialized []byte) (chainhash.Hash, int) {
+	var retAsset chainhash.Hash
+	asset, err := chainhash.NewHash(serialized[:32])
+
+	if err != nil{
+		return retAsset, 0
+	}
+
+	retAsset.SetBytes(asset[:])
+
+	var size int = 32
+
+	return retAsset, size
 }
 
 // -----------------------------------------------------------------------------
@@ -544,7 +576,7 @@ func decompressTxOutAmount(amount uint64) uint64 {
 // compressedTxOutSize returns the number of bytes the passed transaction output
 // fields would take when encoded with the format described above.
 func compressedTxOutSize(amount uint64, pkScript []byte) int {
-	return serializeSizeVLQ(compressTxOutAmount(amount)) +
+	return 1 + serializeSizeVLQ(compressTxOutAmount(amount)) + 32 +
 		compressedScriptSize(pkScript)
 }
 
@@ -553,8 +585,10 @@ func compressedTxOutSize(amount uint64, pkScript []byte) int {
 // passed target byte slice with the format described above.  The target byte
 // slice must be at least large enough to handle the number of bytes returned by
 // the compressedTxOutSize function or it will panic.
-func putCompressedTxOut(target []byte, amount uint64, pkScript []byte) int {
-	offset := putVLQ(target, compressTxOutAmount(amount))
+func putCompressedTxOut(target []byte, txType uint8, amount uint64, asset chainhash.Hash, pkScript []byte) int {
+	offset := putTXType(target, txType)
+	offset += putVLQ(target, compressTxOutAmount(amount))
+	offset += putAsset(target, asset)
 	offset += putCompressedScript(target[offset:], pkScript)
 	return offset
 }
@@ -562,25 +596,80 @@ func putCompressedTxOut(target []byte, amount uint64, pkScript []byte) int {
 // decodeCompressedTxOut decodes the passed compressed txout, possibly followed
 // by other data, into its uncompressed amount and script and returns them along
 // with the number of bytes they occupied prior to decompression.
-func decodeCompressedTxOut(serialized []byte) (uint64, []byte, int, error) {
+func decodeCompressedTxOut(serialized []byte) (uint8, uint64, chainhash.Hash, []byte, int, error) {
 	// Deserialize the compressed amount and ensure there are bytes
 	// remaining for the compressed script.
-	compressedAmount, bytesRead := deserializeVLQ(serialized)
-	if bytesRead >= len(serialized) {
-		return 0, nil, bytesRead, errDeserialize("unexpected end of " +
+
+	totalBytesRead := int(0)
+	txType, bytesRead := deserializeTXType(serialized)
+	totalBytesRead += bytesRead
+	if totalBytesRead >= len(serialized) {
+		var asset chainhash.Hash
+		return 0, 0, asset, nil, bytesRead, errDeserialize("unexpected end of " +
+			"data after txType amount")
+	}
+
+	compressedAmount, bytesRead := deserializeVLQ(serialized[totalBytesRead:])
+	totalBytesRead += bytesRead
+	if totalBytesRead >= len(serialized) {
+		var asset chainhash.Hash
+		return 0, 0, asset, nil, bytesRead, errDeserialize("unexpected end of " +
 			"data after compressed amount")
+	}
+
+	asset, bytesRead := deserializeAsset(serialized[totalBytesRead:])
+	totalBytesRead += bytesRead
+	if totalBytesRead >= len(serialized) {
+		var asset chainhash.Hash
+		return 0, 0, asset, nil, bytesRead, errDeserialize("unexpected end of " +
+			"data after txType amount")
 	}
 
 	// Decode the compressed script size and ensure there are enough bytes
 	// left in the slice for it.
-	scriptSize := decodeCompressedScriptSize(serialized[bytesRead:])
-	if len(serialized[bytesRead:]) < scriptSize {
-		return 0, nil, bytesRead, errDeserialize("unexpected end of " +
+	scriptSize := decodeCompressedScriptSize(serialized[totalBytesRead:])
+	if len(serialized[totalBytesRead:]) < scriptSize {
+		var asset chainhash.Hash
+		return 0, 0, asset, nil, bytesRead, errDeserialize("unexpected end of " +
 			"data after script size")
 	}
 
 	// Decompress and return the amount and script.
 	amount := decompressTxOutAmount(compressedAmount)
-	script := decompressScript(serialized[bytesRead : bytesRead+scriptSize])
-	return amount, script, bytesRead + scriptSize, nil
+	script := decompressScript(serialized[totalBytesRead : totalBytesRead+scriptSize])
+	return txType, amount, asset, script, bytesRead + scriptSize, nil
+}
+
+
+// putTXType serializes the provided TXType byte. The result is placed directly 
+// into the passed byte slice which must
+// be at least large enough to handle the number of bytes returned by the
+// serializeSizeVLQ function or it will panic.
+func putTXType(target []byte, typ uint8) int {
+	offset := 0
+
+	target[offset] = typ
+	
+	return offset + 1
+}
+
+// putAsset serializes the provided asset hash.
+// The result is placed directly into the passed byte slice which must
+// be at least large enough to handle the number of bytes returned by the
+// serializeSizeVLQ function or it will panic.
+func putAsset(target []byte, asset chainhash.Hash) int {
+	offset := 0
+	for ; offset < 32; offset++ {
+
+		target[offset] = asset[offset]
+	}
+
+	// Reverse the bytes so it is MSB-encoded.
+	
+	//Not sure if we need to do this
+	//for i, j := 0, offset; i < j; i, j = i+1, j-1 {
+	//	target[i], target[j] = target[j], target[i]
+	//}
+
+	return offset + 1
 }
