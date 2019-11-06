@@ -259,9 +259,9 @@ func (t TxWitness) SerializeSize() int {
 
 // TxOut defines a bitcoin transaction output.
 type TxOut struct {
-	Type 	 uint8
+	Type     uint8
 	Value    int64
-	Asset	 chainhash.Hash
+	Asset    chainhash.Hash
 	PkScript []byte
 }
 
@@ -277,9 +277,9 @@ func (t *TxOut) SerializeSize() int {
 // transaction value and public key script.
 func NewTxOut(typ uint8, value int64, asset chainhash.Hash, pkScript []byte) *TxOut {
 	return &TxOut{
-		Type: 	  typ,
+		Type:     typ,
 		Value:    value,
-		Asset: 	  asset,
+		Asset:    asset,
 		PkScript: pkScript,
 	}
 }
@@ -332,7 +332,6 @@ func (msg *MsgTx) WitnessHash() chainhash.Hash {
 
 	return msg.TxHash()
 }
-
 
 // TO-DO: Make necessary changes so this works with new TxOut struct
 // Copy creates a deep copy of a transaction so that the original does not get
@@ -401,9 +400,9 @@ func (msg *MsgTx) Copy() *MsgTx {
 		// Create new txOut with the deep copied data and append it to
 		// new Tx.
 		newTxOut := TxOut{
-			Type:	  oldTxOut.Type,
+			Type:     oldTxOut.Type,
 			Value:    oldTxOut.Value,
-			Asset:	  oldTxOut.Asset,
+			Asset:    oldTxOut.Asset,
 			PkScript: newScript,
 		}
 		newTx.TxOut = append(newTx.TxOut, &newTxOut)

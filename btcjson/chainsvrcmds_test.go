@@ -45,38 +45,38 @@ func TestChainSvrCmds(t *testing.T) {
 			name: "createrawtransaction",
 			newCmd: func() (interface{}, error) {
 				return btcjson.NewCmd("createrawtransaction", `[{"txid":"123","vout":1}]`,
-					`{"456":0.0123}`)
+					`{"456":{ "type": 0, "amount": 0.0123, "assethash": ""} }`)
 			},
 			staticCmd: func() interface{} {
 				txInputs := []btcjson.TransactionInput{
 					{Txid: "123", Vout: 1},
 				}
-				amounts := map[string]float64{"456": .0123}
-				return btcjson.NewCreateRawTransactionCmd(txInputs, amounts, nil)
+				outputs := map[string]btcjson.TransactionOutput{"456": {Type: 0, Amount: .0123, AssetHash: ""}}
+				return btcjson.NewCreateRawTransactionCmd(txInputs, outputs, nil)
 			},
-			marshalled: `{"jsonrpc":"1.0","method":"createrawtransaction","params":[[{"txid":"123","vout":1}],{"456":0.0123}],"id":1}`,
+			marshalled: `{"jsonrpc":"1.0","method":"createrawtransaction","params":[[{"txid":"123","vout":1}],{"456":{ "type": 0, "amount": 0.0123, "assethash": ""} }],"id":1}`,
 			unmarshalled: &btcjson.CreateRawTransactionCmd{
 				Inputs:  []btcjson.TransactionInput{{Txid: "123", Vout: 1}},
-				Amounts: map[string]float64{"456": .0123},
+				Outputs: map[string]btcjson.TransactionOutput{"456": {Type: 0, Amount: .0123, AssetHash: ""}},
 			},
 		},
 		{
 			name: "createrawtransaction optional",
 			newCmd: func() (interface{}, error) {
 				return btcjson.NewCmd("createrawtransaction", `[{"txid":"123","vout":1}]`,
-					`{"456":0.0123}`, int64(12312333333))
+					`{"456":{ "type": 0, "amount": 0.0123, "assethash": ""} }`, int64(12312333333))
 			},
 			staticCmd: func() interface{} {
 				txInputs := []btcjson.TransactionInput{
 					{Txid: "123", Vout: 1},
 				}
-				amounts := map[string]float64{"456": .0123}
-				return btcjson.NewCreateRawTransactionCmd(txInputs, amounts, btcjson.Int64(12312333333))
+				outputs := map[string]btcjson.TransactionOutput{"456": {Type: 0, Amount: .0123, AssetHash: ""}}
+				return btcjson.NewCreateRawTransactionCmd(txInputs, outputs, btcjson.Int64(12312333333))
 			},
-			marshalled: `{"jsonrpc":"1.0","method":"createrawtransaction","params":[[{"txid":"123","vout":1}],{"456":0.0123},12312333333],"id":1}`,
+			marshalled: `{"jsonrpc":"1.0","method":"createrawtransaction","params":[[{"txid":"123","vout":1}],{"456":{ "type": 0, "amount": 0.0123, "assethash": ""} },12312333333],"id":1}`,
 			unmarshalled: &btcjson.CreateRawTransactionCmd{
 				Inputs:   []btcjson.TransactionInput{{Txid: "123", Vout: 1}},
-				Amounts:  map[string]float64{"456": .0123},
+				Outputs:  map[string]btcjson.TransactionOutput{"456": {Type: 0, Amount: .0123, AssetHash: ""}},
 				LockTime: btcjson.Int64(12312333333),
 			},
 		},

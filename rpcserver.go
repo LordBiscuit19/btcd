@@ -2679,7 +2679,9 @@ func handleGetTxOut(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (i
 	// from there, otherwise attempt to fetch from the block database.
 	var bestBlockHash string
 	var confirmations int32
+	var type uint8
 	var value int64
+	var hash chainhash.Hash
 	var pkScript []byte
 	var isCoinbase bool
 	includeMempool := true
@@ -2713,7 +2715,9 @@ func handleGetTxOut(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (i
 		best := s.cfg.Chain.BestSnapshot()
 		bestBlockHash = best.Hash.String()
 		confirmations = 0
+		type = txOut.Type
 		value = txOut.Value
+		hash = txOut.Asset
 		pkScript = txOut.PkScript
 		isCoinbase = blockchain.IsCoinBaseTx(mtx)
 	} else {
@@ -2735,7 +2739,9 @@ func handleGetTxOut(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (i
 		best := s.cfg.Chain.BestSnapshot()
 		bestBlockHash = best.Hash.String()
 		confirmations = 1 + best.Height - entry.BlockHeight()
+		type = entry.Type()
 		value = entry.Amount()
+		hash = entry.Asset()
 		pkScript = entry.PkScript()
 		isCoinbase = entry.IsCoinBase()
 	}
@@ -2758,7 +2764,11 @@ func handleGetTxOut(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (i
 	txOutReply := &btcjson.GetTxOutResult{
 		BestBlock:     bestBlockHash,
 		Confirmations: int64(confirmations),
-		Value:         btcutil.Amount(value).ToBTC(),
+		Output:        btcjson.TransactionOutput{
+			Type: type,
+			Amount: btcutil.Amount(value).ToBTC(),
+			AssetHash: hash
+		}
 		ScriptPubKey: btcjson.ScriptPubKeyResult{
 			Asm:       disbuf,
 			Hex:       hex.EncodeToString(pkScript),
