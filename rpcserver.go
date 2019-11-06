@@ -2767,7 +2767,7 @@ func handleGetTxOut(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (i
 		Output: btcjson.TransactionOutput{
 			Type:      typ,
 			Amount:    btcutil.Amount(value).ToBTC(),
-			AssetHash: hash,
+			AssetHash: hash.String(),
 		},
 		ScriptPubKey: btcjson.ScriptPubKeyResult{
 			Asm:       disbuf,
