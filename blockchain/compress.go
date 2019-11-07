@@ -8,6 +8,7 @@ import (
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
+	"fmt"
 )
 
 // -----------------------------------------------------------------------------
@@ -587,8 +588,9 @@ func compressedTxOutSize(amount uint64, pkScript []byte) int {
 // the compressedTxOutSize function or it will panic.
 func putCompressedTxOut(target []byte, txType uint8, amount uint64, asset chainhash.Hash, pkScript []byte) int {
 	offset := putTXType(target, txType)
-	offset += putVLQ(target, compressTxOutAmount(amount))
-	offset += putAsset(target, asset)
+	offset += putVLQ(target[offset:], compressTxOutAmount(amount))
+	fmt.Println("CompressedTxOutAmount is: ", compressTxOutAmount(amount))
+	offset += putAsset(target[offset:], asset)
 	offset += putCompressedScript(target[offset:], pkScript)
 	return offset
 }

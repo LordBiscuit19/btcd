@@ -655,6 +655,8 @@ func serializeUtxoEntry(entry *UtxoEntry) ([]byte, error) {
 	// transaction output.
 	serialized := make([]byte, size)
 	offset := putVLQ(serialized, headerCode)
+	fmt.Println("header code is: ", headerCode)
+	fmt.Println("offset is now: ", offset)
 
 	offset += putCompressedTxOut(serialized[offset:], uint8(entry.Type()), uint64(entry.Amount()), entry.Asset(),
 		entry.PkScript())
@@ -744,6 +746,7 @@ func dbFetchUtxoEntry(dbTx database.Tx, outpoint wire.OutPoint) (*UtxoEntry, err
 	key := outpointKey(outpoint)
 	utxoBucket := dbTx.Metadata().Bucket(utxoSetBucketName)
 	serializedUtxo := utxoBucket.Get(*key)
+	fmt.Println("loaded serialized utxo is: ", serializedUtxo)
 	recycleOutpointKey(key)
 	if serializedUtxo == nil {
 		return nil, nil
@@ -780,6 +783,7 @@ func dbFetchUtxoEntry(dbTx database.Tx, outpoint wire.OutPoint) (*UtxoEntry, err
 // particular, only the entries that have been marked as modified are written
 // to the database.
 func dbPutUtxoView(dbTx database.Tx, view *UtxoViewpoint) error {
+
 	utxoBucket := dbTx.Metadata().Bucket(utxoSetBucketName)
 	for outpoint, entry := range view.entries {
 		// No need to update the database if the entry was not modified.

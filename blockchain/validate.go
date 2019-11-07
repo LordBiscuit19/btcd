@@ -860,6 +860,37 @@ func (b *BlockChain) checkBIP0030(node *blockNode, block *btcutil.Block, view *U
 	return nil
 }
 
+
+// Check all tx outs with asset information to make sure the assets are consistent between
+// transactions. Esentially this prevents someone from changing the asset hash when spending
+// the asset.
+func checkAssetConsistency(tx *btcutil.Tx, utxoView *UtxoViewpoint) (bool){
+	for _, txOut := range tx.MsgTx().TxOut {
+		if txOut.Type == 1{
+			//All assets must have value one for simiplicity
+			if txOut.Value != 1{
+				return false
+			}
+			var same bool = false
+			assetHash := txOut.Asset
+			//check all tx ins to see if there is an asset with the corresponding hash
+			for _, txIn := range tx.MsgTx().TxIn {
+				utxo := utxoView.LookupEntry(txIn.PreviousOutPoint)
+				if utxo.asset == assetHash{
+					same = true
+					break
+				}
+			}
+			//if none of the tx ins have the same hash then return false
+			if same == false{
+				return false
+			}
+		}
+	}
+	return true
+}
+
+
 // CheckTransactionInputs performs a series of checks on the inputs to a
 // transaction to ensure they are valid.  An example of some of the checks
 // include verifying all inputs exist, ensuring the coinbase seasoning
@@ -950,6 +981,13 @@ func CheckTransactionInputs(tx *btcutil.Tx, txHeight int32, utxoView *UtxoViewpo
 		totalSatoshiOut += txOut.Value
 	}
 
+	/**
+	if checkAssetConsistency(tx, utxoView) == false {
+		str := fmt.Sprintf("Found transaction output with different asset hash than input")
+		return 0, ruleError(ErrBadTxOutValue, str)
+	}
+	**/
+	
 	// Ensure the transaction does not spend more than its inputs.
 	if totalSatoshiIn < totalSatoshiOut {
 		str := fmt.Sprintf("total value of all transaction inputs for "+

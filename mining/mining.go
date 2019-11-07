@@ -279,8 +279,12 @@ func createCoinbaseTx(params *chaincfg.Params, coinbaseScript []byte, nextBlockH
 		SignatureScript: coinbaseScript,
 		Sequence:        wire.MaxTxInSequenceNum,
 	})
+	hashPtr, _ := chainhash.NewHashFromStr("0000000000000000000000000000000000000000000000000000000000000000")
+	fmt.Print("Mined block with value of: ", blockchain.CalcBlockSubsidy(nextBlockHeight, params))
 	tx.AddTxOut(&wire.TxOut{
+		Type:	  0,
 		Value:    blockchain.CalcBlockSubsidy(nextBlockHeight, params),
+		Asset:	  *hashPtr,
 		PkScript: pkScript,
 	})
 	return btcutil.NewTx(tx), nil

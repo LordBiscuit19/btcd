@@ -2717,6 +2717,7 @@ func handleGetTxOut(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (i
 		confirmations = 0
 		typ = txOut.Type
 		value = txOut.Value
+		fmt.Print("Value from tx in mempool: ", value)
 		hash = txOut.Asset
 		pkScript = txOut.PkScript
 		isCoinbase = blockchain.IsCoinBaseTx(mtx)
@@ -2741,6 +2742,7 @@ func handleGetTxOut(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (i
 		confirmations = 1 + best.Height - entry.BlockHeight()
 		typ = entry.Type()
 		value = entry.Amount()
+		fmt.Print("Value from tx in database: ", value)
 		hash = entry.Asset()
 		pkScript = entry.PkScript()
 		isCoinbase = entry.IsCoinBase()
