@@ -64,7 +64,7 @@ type TransactionOutput struct {
 // CreateRawTransactionCmd defines the createrawtransaction JSON-RPC command.
 type CreateRawTransactionCmd struct {
 	Inputs   []TransactionInput
-	Outputs  map[string]TransactionOutput `jsonrpcusage:"address":{"type":type, "amount": amount, "assethash": assethash}`
+	Outputs  map[string]TransactionOutput `jsonrpcusage:"\"address\":{\"type\":type, \"amount\": amount, \"assethash\": assethash}"`
 	LockTime *int64
 }
 
