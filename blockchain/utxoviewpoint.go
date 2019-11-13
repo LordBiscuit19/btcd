@@ -655,7 +655,6 @@ func (b *BlockChain) FetchUtxoEntry(outpoint wire.OutPoint) (*UtxoEntry, error) 
 		entry, err = dbFetchUtxoEntry(dbTx, outpoint)
 		return err
 	})
-	fmt.Println("fetched entry from database with value: ", entry.Amount())
 	if err != nil {
 		return nil, err
 	}

@@ -655,8 +655,6 @@ func serializeUtxoEntry(entry *UtxoEntry) ([]byte, error) {
 	// transaction output.
 	serialized := make([]byte, size)
 	offset := putVLQ(serialized, headerCode)
-	fmt.Println("header code is: ", headerCode)
-	fmt.Println("offset is now: ", offset)
 
 	offset += putCompressedTxOut(serialized[offset:], uint8(entry.Type()), uint64(entry.Amount()), entry.Asset(),
 		entry.PkScript())
@@ -746,7 +744,6 @@ func dbFetchUtxoEntry(dbTx database.Tx, outpoint wire.OutPoint) (*UtxoEntry, err
 	key := outpointKey(outpoint)
 	utxoBucket := dbTx.Metadata().Bucket(utxoSetBucketName)
 	serializedUtxo := utxoBucket.Get(*key)
-	fmt.Println("loaded serialized utxo is: ", serializedUtxo)
 	recycleOutpointKey(key)
 	if serializedUtxo == nil {
 		return nil, nil
