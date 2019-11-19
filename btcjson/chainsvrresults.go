@@ -458,6 +458,7 @@ func (v *VinPrevOut) MarshalJSON() ([]byte, error) {
 type Vout struct {
 	Value        float64            `json:"value"`
 	N            uint32             `json:"n"`
+	AssetHash    string             `json:"assetHash"`
 	ScriptPubKey ScriptPubKeyResult `json:"scriptPubKey"`
 }
 
