@@ -744,6 +744,7 @@ func createVoutList(mtx *wire.MsgTx, chainParams *chaincfg.Params, filterAddrMap
 		vout.ScriptPubKey.Type = scriptClass.String()
 		vout.ScriptPubKey.ReqSigs = int32(reqSigs)
 		vout.AssetHash = v.Asset.String()
+		vout.TxType = v.Type
 
 		voutList = append(voutList, vout)
 	}
