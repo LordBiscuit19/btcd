@@ -114,6 +114,8 @@ type ListUnspentResult struct {
 	Account       string  `json:"account"`
 	ScriptPubKey  string  `json:"scriptPubKey"`
 	RedeemScript  string  `json:"redeemScript,omitempty"`
+	TxType        uint8   `json:"txType"`
+	AssetHash     string  `json:"assetHash"`
 	Amount        float64 `json:"amount"`
 	Confirmations int64   `json:"confirmations"`
 	Spendable     bool    `json:"spendable"`
